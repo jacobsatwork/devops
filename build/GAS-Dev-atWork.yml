@@ -1,0 +1,299 @@
+# Variable 'Build_Path' was defined in the Variables tab
+# Variable Group 'Dev Variable Group' was defined in the Variables tab
+resources:
+  repositories:
+  - repository: self
+    type: git
+    ref: $(Build_Path)
+jobs:
+- job: Job_1
+  displayName: Agent job 1
+  pool:
+    vmImage: ubuntu-18.04
+  steps:
+  - checkout: self
+  - task: CmdLine@2
+    displayName: Download Mendix Docker Build Pack
+    inputs:
+      script: >-
+        wget https://github.com/MXClyde/docker-mendix-buildpack/archive/telegrafext-nonroot.zip
+
+        unzip telegrafext-nonroot.zip
+
+        mv  docker-mendix-buildpack-telegrafext-nonroot/* .
+
+        rm -R  docker-mendix-buildpack-telegrafext-nonroot
+  - task: Docker@0
+    displayName: Build Docker image for Mendix app
+    inputs:
+      azureSubscriptionEndpoint: 5fc4e83e-16f5-4343-9552-c2148440bb71
+      azureContainerRegistry: appdevmxregistry.azurecr.io
+      buildArguments: >
+        BUILD_PATH=$(Build_Path)
+
+        APPMETRICS_PROMETHEUS=true
+      imageName: mendix/atwork
+      additionalImageTags: $(Build.SourceVersion)-$(Build.BuildId)
+      includeLatestTag: true
+      cwd: ''
+  - task: Docker@0
+    displayName: Push Docker image to Azure Container Registry
+    inputs:
+      azureSubscriptionEndpoint: 5fc4e83e-16f5-4343-9552-c2148440bb71
+      azureContainerRegistry: appdevmxregistry.azurecr.io
+      action: Push an image
+      imageName: mendix/atwork
+      additionalImageTags: $(Build.SourceVersion)-$(Build.BuildId)
+      includeLatestTag: true
+      cwd: ''
+  - task: Docker@0
+    displayName: Remove temporary container (if exists)
+    continueOnError: True
+    enabled: False
+    inputs:
+      azureSubscriptionEndpoint: c2ca0c6d-92a5-43fc-858b-b506582a761c
+      azureContainerRegistry: appdevmxregistry.azurecr.io
+      action: Run a Docker command
+      imageName: mendix/assetmanager
+      additionalImageTags: $(Build.SourceVersion)-$(Build.BuildId)
+      containerName: mendixapp
+      entrypoint: /bin/true
+      customCommand: rm mendixapp
+      cwd: ''
+  - task: Docker@0
+    displayName: Run temporary container (for extracting metadata.json)
+    inputs:
+      azureSubscriptionEndpoint: 5fc4e83e-16f5-4343-9552-c2148440bb71
+      azureContainerRegistry: appdevmxregistry.azurecr.io
+      action: Run an image
+      imageName: mendix/atwork
+      additionalImageTags: $(Build.SourceVersion)-$(Build.BuildId)
+      containerName: mendixapp
+      entrypoint: /bin/true
+      cwd: ''
+  - task: Docker@0
+    displayName: Extract metadata.json from temporary container image
+    inputs:
+      azureSubscriptionEndpoint: 5fc4e83e-16f5-4343-9552-c2148440bb71
+      azureContainerRegistry: appdevmxregistry.azurecr.io
+      action: Run a Docker command
+      imageName: mendix/assetmanager
+      additionalImageTags: $(Build.SourceVersion)-$(Build.BuildId)
+      containerName: mendixapp
+      entrypoint: /bin/true
+      customCommand: cp mendixapp:/build/model/metadata.json $(Build.ArtifactStagingDirectory)
+      cwd: ''
+  - task: Docker@0
+    displayName: Remove temporary container
+    condition: always()
+    inputs:
+      azureSubscriptionEndpoint: 5fc4e83e-16f5-4343-9552-c2148440bb71
+      azureContainerRegistry: appdevmxregistry.azurecr.io
+      action: Run a Docker command
+      imageName: mendix/assetmanager
+      additionalImageTags: $(Build.SourceVersion)-$(Build.BuildId)
+      containerName: mendixapp
+      entrypoint: /bin/true
+      customCommand: rm mendixapp
+      cwd: ''
+  - task: PublishBuildArtifacts@1
+    displayName: 'Publish Artifact: Docker Image'
+    inputs:
+      PathtoPublish: $(Build.ArtifactStagingDirectory)/metadata.json
+      ArtifactName: DockerBuild
+      TargetPath: '\\my\share\$(Build.DefinitionName)\$(Build.BuildNumber)'
+  - task: CmdLine@2
+    displayName: Download Mendix Docker Build Pack
+    enabled: False
+    inputs:
+      script: >-
+        wget https://github.com/jacobsatwork/docker-mendix-buildpack/archive/telegrafext-nonroot.zip
+
+        unzip telegrafext-nonroot.zip
+
+        mv  docker-mendix-buildpack-telegrafext-nonroot/* .
+
+        rm -R  docker-mendix-buildpack-telegrafext-nonroot
+  - task: Docker@0
+    displayName: Build Docker image for Mendix app
+    enabled: False
+    inputs:
+      azureSubscriptionEndpoint: 3fcf855e-9b3b-4c0a-b05a-782f49be8d04
+      azureContainerRegistry: appdevmxregistry.azurecr.io
+      buildArguments: >
+        BUILD_PATH=$(Build_Path)
+
+        APPMETRICS_PROMETHEUS=true
+      imageName: mendix/atwork
+      additionalImageTags: $(Build.SourceVersion)-$(Build.BuildId)
+      includeLatestTag: true
+      cwd: ''
+  - task: Docker@0
+    displayName: Push Docker image to Azure Container Registry
+    enabled: False
+    inputs:
+      azureSubscriptionEndpoint: 3fcf855e-9b3b-4c0a-b05a-782f49be8d04
+      azureContainerRegistry: appdevmxregistry.azurecr.io
+      action: Push an image
+      imageName: mendix/atwork
+      additionalImageTags: $(Build.SourceVersion)-$(Build.BuildId)
+      includeLatestTag: true
+      cwd: ''
+  - task: Docker@0
+    displayName: Remove temporary container (if exists)
+    continueOnError: True
+    enabled: False
+    inputs:
+      azureSubscriptionEndpoint: c2ca0c6d-92a5-43fc-858b-b506582a761c
+      azureContainerRegistry: appdevmxregistry.azurecr.io
+      action: Run a Docker command
+      imageName: mendix/assetmanager
+      additionalImageTags: $(Build.SourceVersion)-$(Build.BuildId)
+      containerName: mendixapp
+      entrypoint: /bin/true
+      customCommand: rm mendixapp
+      cwd: ''
+  - task: Docker@0
+    displayName: Run temporary container (for extracting metadata.json)
+    enabled: False
+    inputs:
+      azureSubscriptionEndpoint: 3fcf855e-9b3b-4c0a-b05a-782f49be8d04
+      azureContainerRegistry: appdevmxregistry.azurecr.io
+      action: Run an image
+      imageName: mendix/atwork
+      additionalImageTags: $(Build.SourceVersion)-$(Build.BuildId)
+      containerName: mendixapp
+      entrypoint: /bin/true
+      cwd: ''
+  - task: Docker@0
+    displayName: Extract metadata.json from temporary container image
+    enabled: False
+    inputs:
+      azureSubscriptionEndpoint: 3fcf855e-9b3b-4c0a-b05a-782f49be8d04
+      azureContainerRegistry: appdevmxregistry.azurecr.io
+      action: Run a Docker command
+      imageName: mendix/assetmanager
+      additionalImageTags: $(Build.SourceVersion)-$(Build.BuildId)
+      containerName: mendixapp
+      entrypoint: /bin/true
+      customCommand: cp mendixapp:/build/model/metadata.json $(Build.ArtifactStagingDirectory)
+      cwd: ''
+  - task: Docker@0
+    displayName: Remove temporary container
+    condition: always()
+    enabled: False
+    inputs:
+      azureSubscriptionEndpoint: 3fcf855e-9b3b-4c0a-b05a-782f49be8d04
+      azureContainerRegistry: appdevmxregistry.azurecr.io
+      action: Run a Docker command
+      imageName: mendix/assetmanager
+      additionalImageTags: $(Build.SourceVersion)-$(Build.BuildId)
+      containerName: mendixapp
+      entrypoint: /bin/true
+      customCommand: rm mendixapp
+      cwd: ''
+  - task: PublishBuildArtifacts@1
+    displayName: 'Publish Artifact: Docker Image'
+    enabled: False
+    inputs:
+      PathtoPublish: $(Build.ArtifactStagingDirectory)/metadata.json
+      ArtifactName: DockerBuild
+      TargetPath: '\\my\share\$(Build.DefinitionName)\$(Build.BuildNumber)'
+  - task: CmdLine@2
+    displayName: Download Mendix Docker Build Pack
+    enabled: False
+    inputs:
+      script: >-
+        wget https://github.com/misraa-zz/docker-mendix-buildpack/archive/telegrafext-nonroot.zip
+
+        unzip telegrafext-nonroot.zip
+
+        mv  docker-mendix-buildpack-telegrafext-nonroot/* .
+
+        rm -R  docker-mendix-buildpack-telegrafext-nonroot
+  - task: Docker@0
+    displayName: Build Docker image for Mendix app
+    enabled: False
+    inputs:
+      azureSubscriptionEndpoint: 5fc4e83e-16f5-4343-9552-c2148440bb71
+      azureContainerRegistry: appdevmxregistry.azurecr.io
+      buildArguments: >
+        BUILD_PATH=$(Build_Path)
+
+        APPMETRICS_PROMETHEUS=true
+      imageName: mendix/atwork
+      additionalImageTags: $(Build.SourceVersion)-$(Build.BuildId)
+      includeLatestTag: true
+      cwd: ''
+  - task: Docker@0
+    displayName: Push Docker image to Azure Container Registry
+    enabled: False
+    inputs:
+      azureSubscriptionEndpoint: 5fc4e83e-16f5-4343-9552-c2148440bb71
+      azureContainerRegistry: appdevmxregistry.azurecr.io
+      action: Push an image
+      imageName: mendix/atwork
+      additionalImageTags: $(Build.SourceVersion)-$(Build.BuildId)
+      includeLatestTag: true
+      cwd: ''
+  - task: Docker@0
+    displayName: Remove temporary container (if exists)
+    continueOnError: True
+    enabled: False
+    inputs:
+      azureSubscriptionEndpoint: c2ca0c6d-92a5-43fc-858b-b506582a761c
+      azureContainerRegistry: appdevmxregistry.azurecr.io
+      action: Run a Docker command
+      imageName: mendix/assetmanager
+      additionalImageTags: $(Build.SourceVersion)-$(Build.BuildId)
+      containerName: mendixapp
+      entrypoint: /bin/true
+      customCommand: rm mendixapp
+      cwd: ''
+  - task: Docker@0
+    displayName: Run temporary container (for extracting metadata.json)
+    enabled: False
+    inputs:
+      azureSubscriptionEndpoint: 5fc4e83e-16f5-4343-9552-c2148440bb71
+      azureContainerRegistry: appdevmxregistry.azurecr.io
+      action: Run an image
+      imageName: mendix/atwork
+      additionalImageTags: $(Build.SourceVersion)-$(Build.BuildId)
+      containerName: mendixapp
+      entrypoint: /bin/true
+      cwd: ''
+  - task: Docker@0
+    displayName: Extract metadata.json from temporary container image
+    enabled: False
+    inputs:
+      azureSubscriptionEndpoint: 5fc4e83e-16f5-4343-9552-c2148440bb71
+      azureContainerRegistry: appdevmxregistry.azurecr.io
+      action: Run a Docker command
+      imageName: mendix/assetmanager
+      additionalImageTags: $(Build.SourceVersion)-$(Build.BuildId)
+      containerName: mendixapp
+      entrypoint: /bin/true
+      customCommand: cp mendixapp:/build/model/metadata.json $(Build.ArtifactStagingDirectory)
+      cwd: ''
+  - task: Docker@0
+    displayName: Remove temporary container
+    condition: always()
+    enabled: False
+    inputs:
+      azureSubscriptionEndpoint: 5fc4e83e-16f5-4343-9552-c2148440bb71
+      azureContainerRegistry: appdevmxregistry.azurecr.io
+      action: Run a Docker command
+      imageName: mendix/assetmanager
+      additionalImageTags: $(Build.SourceVersion)-$(Build.BuildId)
+      containerName: mendixapp
+      entrypoint: /bin/true
+      customCommand: rm mendixapp
+      cwd: ''
+  - task: PublishBuildArtifacts@1
+    displayName: 'Publish Artifact: Docker Image'
+    enabled: False
+    inputs:
+      PathtoPublish: $(Build.ArtifactStagingDirectory)/metadata.json
+      ArtifactName: DockerBuild
+      TargetPath: '\\my\share\$(Build.DefinitionName)\$(Build.BuildNumber)'
+...
